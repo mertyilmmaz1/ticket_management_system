@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "239365874495",
+    "project_id": "ticket-management1",
+    "storage_bucket": "ticket-management1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:239365874495:android:c305c3e9892cc09a9ae98a",
+        "android_client_info": {
+          "package_name": "com.mrtylmz.ticketManagementSystem"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyArBjwEEWTyNzOO40krUGmgBGG6MnFI2rg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

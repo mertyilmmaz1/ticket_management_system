@@ -1,0 +1,160 @@
+---
+description: Flutter Clean Architecture with Firebase - feature structure, Repository pattern, Provider, DI
+alwaysApply: true
+---
+
+# Flutter Clean Architecture (Firebase Backend)
+
+Proje mimarisi: feature-based Clean Architecture, Firebase backend, Provider state management, GetIt DI.
+
+---
+
+## Proje Klasör Yapısı
+
+```
+lib/
+├── main.dart
+├── core/
+│   ├── feature/                    # Feature modülleri
+│   │   └── [feature_name]/
+│   └── product/                    # Paylaşılan altyapı
+│       ├── base/                   # BaseRepository vb.
+│       ├── firebase/               # Firestore, Auth, Storage wrapper'ları
+│       ├── init/                   # Uygulama başlatma
+│       ├── router/                 # GoRouter
+│       ├── state/                  # CustomLocator, ProductStateItems, StateInitialize
+│       ├── theme/                  # AppTheme, AppColors
+│       ├── utility/
+│       └── widget/                 # Paylaşılan widget'lar
+```
+
+---
+
+## Feature Klasör Yapısı (Her feature için)
+
+```
+feature/[feature_name]/
+├── data/
+│   ├── [feature]_firebase_datasource.dart   # Firebase işlemleri (Firestore/Auth/Storage)
+│   ├── [feature]_repository_impl.dart       # BaseRepository extend, guard() kullan
+│   └── model/
+│       └── [model]_model.dart               # toMap() / fromMap(data, id)
+├── domain/
+│   ├── [feature]_repository.dart            # Abstract repository interface
+│   └── [feature]_usecases.dart
+└── presentation/
+    ├── mixin/[feature]_mixin.dart
+    ├── provider/[feature]_provider.dart     # ChangeNotifier
+    ├── view/[feature]_page.dart
+    ├── subview/                             # (opsiyonel) detay sayfaları
+    └── widgets/                             # (opsiyonel) feature-specific widget'lar
+```
+
+- **DataSource**: Sadece Firebase SDK çağrıları (Firestore, Auth, Storage). Model dönüşü `fromMap` ile.
+- **Repository Impl**: `BaseRepository` extend et; tüm async işlemleri `guard<T>(() => ...)` ile sarmala; `Either<Failure, T>` dön.
+- **Domain**: Repository interface + UseCases (business logic wrapper).
+- **Provider**: ChangeNotifier; UseCases kullan; `Status` (idle/loading/success/error) ve `notifyListeners()`.
+
+---
+
+## Base Repository
+
+- Tüm repository'ler `BaseRepository` extend eder.
+- Async: `guard<T>(Future<T> Function() call)` — try/catch, FirebaseException/FirebaseAuthException → `Failure`, yoksa `right(result)`.
+- Stream: `guardStream<T>(Stream<T> Function() call)` — aynı hata dönüşümü.
+- Failure: `message`, `code?`, `FailureType` (auth, firebase, network, unknown).
+
+---
+
+## Firebase Katmanı
+
+- **Firestore**: Collection/document path'leri sabit sınıfta (örn. `FirestoreCollections`). Okuma/yazma/silme/stream için ortak bir `FirestoreService` wrapper kullan (getDocument, setDocument, getCollection, streamCollection, streamDocument, batch, runTransaction).
+- **Storage**: Ortak `FirebaseStorageService` (uploadFile, deleteFile, getDownloadURL). Path'ler sabit sınıfta (örn. `StoragePaths`).
+- DataSource'lar doğrudan Firebase instance değil, bu wrapper'ları veya kendi inject edilen Firestore/Auth/Storage instance'larını kullanır.
+
+---
+
+## Dependency Injection (GetIt)
+
+- **CustomLocator**: `GetIt` instance; `locateServices()` ile tüm kayıtlar. Firebase core (Auth, Firestore, Storage, Messaging) → Service wrapper'lar → her feature için DataSource (LazySingleton), Repository (LazySingleton), UseCases (LazySingleton), Provider (Factory).
+- **ProductStateItems**: Statik getter'lar ile `CustomLocator.read<T>()` — servisler ve provider'lar için tek erişim noktası.
+- Yeni feature: DataSource, Repository, UseCases, Provider'ı CustomLocator'a ekle; ProductStateItems'a getter ekle.
+
+---
+
+## State Management (Provider)
+
+- **StateInitialize**: `MultiProvider` ile tüm `ChangeNotifierProvider` kayıtları (ProductStateItems.authProvider vb.). Uygulama root'unda (main'de) `StateInitialize(child: MyApp())`.
+- **Status**: `enum Status { idle, loading, success, error }` — provider'larda kullan.
+- Sayfa tarafında: `context.read<XProvider>()` veya `context.watch<XProvider>()`.
+
+---
+
+## Uygulama Başlatma Sırası
+
+1. `WidgetsFlutterBinding.ensureInitialized()`
+2. `Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)`
+3. Firestore settings (persistence, cache) — isteniyorsa
+4. Local DB (Hive vb.) — isteniyorsa
+5. `CustomLocator.locateServices()`
+6. FCM / diğer servisler — isteniyorsa
+7. SystemChrome (orientation vb.)
+
+Hata için `runZonedGuarded` kullan; init tamamlanmadan router/UI gösterme (splash göster, init bitince `setState` ile asıl app).
+
+---
+
+## Router (GoRouter)
+
+- Tek bir `AppRouter` sınıfı; `GoRouter` instance (navigatorKey, initialLocation, routes).
+- ShellRoute ile bottom nav; sayfa route'ları GoRoute (path, builder). Param için `state.extra` veya path parametreleri.
+- `MaterialApp.router(routerConfig: ProductStateItems.appRouter.router)`.
+
+---
+
+## Main.dart
+
+- `runApp(StateInitialize(child: MyApp()))`.
+- MyApp StatefulWidget; init async (ApplicationInitialize().make()); init bitene kadar SplashScreen, sonra `MaterialApp.router` + theme + StateInitialize zaten üstte olduğu için provider'lar hazır.
+
+---
+
+## Tema ve Renkler
+
+- Tüm renkler merkezi bir `AppColors` sınıfından; **hardcoded Color kullanma**.
+- `AppTheme` (dark/light) — `colorScheme`, `scaffoldBackgroundColor`, `appBarTheme`, `cardTheme`, `elevatedButtonTheme`, `inputDecorationTheme`, `bottomNavigationBarTheme` bu tema ile tutarlı olsun.
+
+---
+
+## Yeni Feature Ekleme Checklist
+
+1. `feature/[name]/` altında data, domain, presentation klasörlerini ve dosyalarını oluştur.
+2. Model: `toMap()` ve `fromMap(Map, String id)`; Firestore için Timestamp kullan.
+3. Firebase DataSource: Firestore/Auth/Storage işlemleri.
+4. Abstract Repository (domain) ve RepositoryImpl (BaseRepository + guard).
+5. UseCases.
+6. Provider (ChangeNotifier, Status, UseCases).
+7. CustomLocator'a DataSource, Repository, UseCases, Provider kaydet.
+8. ProductStateItems'a getter ekle.
+9. StateInitialize'a ChangeNotifierProvider ekle.
+10. AppRouter'a route ekle.
+11. Gerekirse Firestore/Storage security rules güncelle.
+
+---
+
+## Bağımlılık Özeti
+
+- **State**: provider  
+- **DI**: get_it  
+- **Router**: go_router  
+- **Functional**: dartz (Either)  
+- **Firebase**: firebase_core, firebase_auth, cloud_firestore, firebase_storage, firebase_messaging  
+- **Local DB (opsiyonel)**: hive, hive_flutter  
+
+---
+
+## Genel Kurallar
+
+- Data layer dışarıya sadece model ve repository contract'ı ile açılır; UI veya domain Firebase'e bağımlı olmaz.
+- Hata yönetimi: repository katmanında guard → Either<Failure, T>; UI'da fold ile mesaj/retry.
+- Çoklu dil için metinleri merkezi bir yapıda tut (tek dosya veya l10n); widget'larda doğrudan string yazma.

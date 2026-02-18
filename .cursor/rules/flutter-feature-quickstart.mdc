@@ -1,0 +1,176 @@
+---
+description: Flutter Quick Start - Yeni feature oluşturma hızlı referans
+globs: "**/*.dart"
+alwaysApply: false
+---
+
+# Flutter Feature Quick Start
+
+Yeni feature oluşturmak için hızlı referans.
+
+---
+
+## 1. Klasör Yapısını Oluştur
+
+```
+feature/
+└── [feature_name]/
+    ├── data/
+    │   ├── [feature]_remote_datasources.dart
+    │   ├── [feature]_repository_impl.dart
+    │   └── model/
+    │       └── [feature]_model.dart
+    ├── domain/
+    │   ├── [feature]_repository.dart
+    │   └── [feature]_usecases.dart
+    └── presentation/
+        ├── mixin/[feature]_mixin.dart
+        ├── provider/[feature]_provider.dart
+        └── view/[feature]_page.dart
+```
+
+---
+
+## 2. Model
+
+```dart
+class FeatureModel {
+  final String id;
+  final String title;
+  
+  FeatureModel({required this.id, required this.title});
+  
+  factory FeatureModel.fromMap(Map<String, dynamic> map) =>
+      FeatureModel(id: map['id'] ?? '', title: map['title'] ?? '');
+}
+```
+
+---
+
+## 3. Remote DataSource
+
+```dart
+class FeatureRemoteDataSource {
+  final NetworkClient _client;
+  FeatureRemoteDataSource(this._client);
+
+  Future<List<FeatureModel>> getList() async {
+    final res = await _client.get<Map<String, dynamic>>(ServicePath.featureList.value);
+    final list = (res.data?['data'] as List?) ?? [];
+    return list.map((e) => FeatureModel.fromMap(e)).toList();
+  }
+}
+```
+
+---
+
+## 4. Domain Layer
+
+```dart
+// Abstract Repository
+abstract class FeatureRepository {
+  Future<Either<Failure, List<FeatureModel>>> getList();
+}
+
+// UseCases
+class FeatureUseCases {
+  final FeatureRepository _repo;
+  FeatureUseCases(this._repo);
+  
+  Future<Either<Failure, List<FeatureModel>>> getList() => _repo.getList();
+}
+```
+
+---
+
+## 5. Repository Implementation
+
+```dart
+class FeatureRepositoryImpl extends BaseRepository implements FeatureRepository {
+  final FeatureRemoteDataSource datasources;
+  FeatureRepositoryImpl(this.datasources);
+
+  @override
+  Future<Either<Failure, List<FeatureModel>>> getList() =>
+      guard(() => datasources.getList(), (data) => data);
+}
+```
+
+---
+
+## 6. Provider
+
+```dart
+class FeatureProvider extends ChangeNotifier {
+  final FeatureUseCases uc;
+  FeatureProvider(this.uc);
+
+  Status status = Status.idle;
+  List<FeatureModel> items = [];
+
+  Future<void> getList() async {
+    status = Status.loading;
+    notifyListeners();
+
+    final result = await uc.getList();
+    result.fold(
+      (fail) => status = Status.error,
+      (data) {
+        items = data;
+        status = Status.success;
+      },
+    );
+    notifyListeners();
+  }
+}
+```
+
+---
+
+## 7. DI Kaydı (CustomLocator)
+
+```dart
+// product_state_container.dart içine ekle:
+..registerFactory<FeatureRemoteDataSource>(
+  () => FeatureRemoteDataSource(locator<NetworkClient>()),
+)
+..registerFactory<FeatureRepository>(
+  () => FeatureRepositoryImpl(locator<FeatureRemoteDataSource>()),
+)
+..registerFactory<FeatureUseCases>(
+  () => FeatureUseCases(locator<FeatureRepository>()),
+)
+..registerFactory<FeatureProvider>(
+  () => FeatureProvider(locator<FeatureUseCases>()),
+)
+```
+
+---
+
+## 8. ProductStateItems
+
+```dart
+// product_state_items.dart içine ekle:
+static FeatureProvider get featureProvider => CustomLocator.read<FeatureProvider>();
+```
+
+---
+
+## 9. StateInitialize
+
+```dart
+// state_initialize.dart içine ekle:
+ChangeNotifierProvider(create: (_) => ProductStateItems.featureProvider),
+```
+
+---
+
+## 10. Router
+
+```dart
+// app_router.dart içine ekle:
+GoRoute(
+  path: '/feature_page',
+  builder: (context, state) => const FeaturePage(),
+),
+```
