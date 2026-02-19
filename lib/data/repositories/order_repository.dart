@@ -120,7 +120,16 @@ class OrderRepository {
     String tenantId,
     DateTime dayStart,
     DateTime dayEnd,
-  ) async {
+  ) {
+    return getClosedOrdersInRange(tenantId, start: dayStart, end: dayEnd);
+  }
+
+  /// Closed orders for an arbitrary date range [start, end).
+  Future<List<OrderModel>> getClosedOrdersInRange(
+    String tenantId, {
+    required DateTime start,
+    required DateTime end,
+  }) async {
     final list = await _firestore.getCollection(
       FirestorePaths.orders(tenantId),
       whereFilters: [const QueryFilter(field: 'status', value: 'closed')],
@@ -130,7 +139,7 @@ class OrderRepository {
         .where((o) => o.closedAt != null)
         .where((o) {
       final t = o.closedAt!;
-      return !t.isBefore(dayStart) && t.isBefore(dayEnd);
+      return !t.isBefore(start) && t.isBefore(end);
     })
         .toList();
     orders.sort((a, b) => (b.closedAt!).compareTo(a.closedAt!));

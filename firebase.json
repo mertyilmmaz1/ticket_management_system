@@ -1,1 +1,5 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"ticket-management1","appId":"1:239365874495:android:c305c3e9892cc09a9ae98a","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"ticket-management1","appId":"1:239365874495:ios:8c7c9f3ed06d8ab19ae98a","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"ticket-management1","configurations":{"android":"1:239365874495:android:c305c3e9892cc09a9ae98a","ios":"1:239365874495:ios:8c7c9f3ed06d8ab19ae98a"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "flutter":{"platforms":{"android":{"default":{"projectId":"ticket-management1","appId":"1:239365874495:android:c305c3e9892cc09a9ae98a","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"ticket-management1","appId":"1:239365874495:ios:8c7c9f3ed06d8ab19ae98a","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"ticket-management1","configurations":{"android":"1:239365874495:android:c305c3e9892cc09a9ae98a","ios":"1:239365874495:ios:8c7c9f3ed06d8ab19ae98a"}}}}}}

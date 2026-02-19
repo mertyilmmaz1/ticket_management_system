@@ -18,10 +18,9 @@ class TenantRepository {
   }
 
   Future<Tenant> addTenant(String name) async {
-    final id = await _firestore.addDocument(
-      FirestorePaths.tenants(),
-      {'name': name},
-    );
+    final id = await _firestore.addDocument(FirestorePaths.tenants(), {
+      'name': name,
+    });
     return Tenant(id: id, name: name);
   }
 }

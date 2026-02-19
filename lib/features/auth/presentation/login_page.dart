@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants.dart';
+import '../../../core/providers/app_providers.dart';
+import '../../../core/responsive/responsive.dart';
 import '../../../core/router/app_router.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -18,6 +20,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _passwordController = TextEditingController();
   bool _loading = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _redirectIfLoggedIn());
+  }
+
+  void _redirectIfLoggedIn() {
+    final user = ref.read(currentUserProvider).valueOrNull;
+    if (user != null && mounted) context.go(AppRouter.tenantSelect);
+  }
 
   @override
   void dispose() {
@@ -54,11 +67,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenClass = screenClassOf(context);
+    final formMaxWidth = screenClass.isPhone ? 420.0 : 520.0;
+
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
+            constraints: BoxConstraints(maxWidth: formMaxWidth),
             child: Padding(
               padding: const EdgeInsets.all(AppConstants.screenPadding),
               child: Column(

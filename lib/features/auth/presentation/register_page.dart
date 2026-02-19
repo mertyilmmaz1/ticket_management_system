@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants.dart';
+import '../../../core/responsive/responsive.dart';
 import '../../../core/router/app_router.dart';
 
 class RegisterPage extends ConsumerStatefulWidget {
@@ -89,12 +90,15 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenClass = screenClassOf(context);
+    final formMaxWidth = screenClass.isPhone ? 420.0 : 520.0;
+
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
+              constraints: BoxConstraints(maxWidth: formMaxWidth),
               child: Padding(
                 padding: const EdgeInsets.all(AppConstants.screenPadding),
                 child: Column(

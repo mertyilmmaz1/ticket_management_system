@@ -39,5 +39,6 @@ final currentUserProvider = StreamProvider<User?>((ref) {
 
 /// Selected tenant ID. Set after login + tenant selection.
 final tenantIdProvider = StateProvider<String?>((ref) => null);
+
 /// Selected tenant name for display.
 final tenantNameProvider = StateProvider<String?>((ref) => null);

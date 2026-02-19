@@ -3,16 +3,9 @@ class TableModel {
   final String name;
   final int sortOrder;
 
-  const TableModel({
-    required this.id,
-    required this.name,
-    this.sortOrder = 0,
-  });
+  const TableModel({required this.id, required this.name, this.sortOrder = 0});
 
-  Map<String, dynamic> toMap() => {
-        'name': name,
-        'sortOrder': sortOrder,
-      };
+  Map<String, dynamic> toMap() => {'name': name, 'sortOrder': sortOrder};
 
   factory TableModel.fromMap(Map<String, dynamic> map, [String? id]) =>
       TableModel(

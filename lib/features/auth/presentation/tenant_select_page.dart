@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/constants.dart';
 import '../../../core/providers/app_providers.dart';
+import '../../../core/responsive/responsive.dart';
 import '../../../core/router/app_router.dart';
 import '../../../data/models/tenant.dart';
 
@@ -17,6 +18,7 @@ class TenantSelectPage extends ConsumerStatefulWidget {
 class _TenantSelectPageState extends ConsumerState<TenantSelectPage> {
   List<Tenant> _tenants = [];
   bool _loading = true;
+  bool _loadInFlight = false;
   String? _error;
 
   @override
@@ -26,12 +28,37 @@ class _TenantSelectPageState extends ConsumerState<TenantSelectPage> {
   }
 
   Future<void> _load() async {
+    if (_loadInFlight) return;
+    _loadInFlight = true;
+    try {
+      final user = await ref.read(currentUserProvider.future);
+      if (!mounted) {
+        _loadInFlight = false;
+        return;
+      }
+      if (user == null) {
+        if (mounted) context.go(AppRouter.login);
+        _loadInFlight = false;
+        return;
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
+      _loadInFlight = false;
+      return;
+    }
+    setState(() => _loading = true);
     try {
       final list = await ref.read(tenantRepositoryProvider).getTenants();
       if (!mounted) return;
       setState(() {
         _tenants = list;
         _loading = false;
+        _error = null;
       });
     } catch (e) {
       if (!mounted) return;
@@ -39,6 +66,8 @@ class _TenantSelectPageState extends ConsumerState<TenantSelectPage> {
         _error = e.toString();
         _loading = false;
       });
+    } finally {
+      _loadInFlight = false;
     }
   }
 
@@ -57,7 +86,6 @@ class _TenantSelectPageState extends ConsumerState<TenantSelectPage> {
         content: TextField(
           controller: nameController,
           decoration: const InputDecoration(labelText: 'İşletme adı'),
-          autofocus: true,
         ),
         actions: [
           TextButton(
@@ -91,6 +119,19 @@ class _TenantSelectPageState extends ConsumerState<TenantSelectPage> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = ref.watch(currentUserProvider);
+    if (auth.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (auth.valueOrNull == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    final screenClass = screenClassOf(context);
+    final maxExtent = screenClass.isPhone ? 220.0 : 300.0;
     return Scaffold(
       appBar: AppBar(title: const Text('İşletme Seçin')),
       body: SafeArea(
@@ -112,11 +153,11 @@ class _TenantSelectPageState extends ConsumerState<TenantSelectPage> {
                     child: _tenants.isEmpty
                         ? _EmptyTenantListBody(onAddTenant: _showAddTenantDialog)
                         : GridView.builder(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
+                            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: maxExtent,
                               mainAxisSpacing: 16,
                               crossAxisSpacing: 16,
-                              childAspectRatio: 1.2,
+                              childAspectRatio: screenClass.isPhone ? 1.1 : 1.22,
                             ),
                             itemCount: _tenants.length + 1,
                             itemBuilder: (_, i) {
