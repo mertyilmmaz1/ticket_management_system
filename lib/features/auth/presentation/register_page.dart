@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants.dart';
+import '../../../core/logger.dart';
 import '../../../core/responsive/responsive.dart';
 import '../../../core/router/app_router.dart';
 
@@ -80,9 +81,10 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
         _error = message;
         _loading = false;
       });
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('Registration failed', error: e, stackTrace: st, tag: 'Auth');
       setState(() {
-        _error = 'Kayıt başarısız';
+        _error = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
         _loading = false;
       });
     }

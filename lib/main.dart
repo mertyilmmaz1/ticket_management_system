@@ -5,15 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'core/logger.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   FlutterError.onError = (details) {
+    AppLogger.error(
+      'FlutterError',
+      error: details.exception,
+      stackTrace: details.stack,
+      tag: 'Flutter',
+    );
     FlutterError.presentError(details);
   };
   PlatformDispatcher.instance.onError = (error, stack) {
+    AppLogger.error('PlatformError', error: error, stackTrace: stack, tag: 'Platform');
     FlutterError.reportError(
       FlutterErrorDetails(exception: error, stack: stack),
     );

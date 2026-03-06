@@ -1,9 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum QueryFilterType { isEqualTo, arrayContains }
+
 class QueryFilter {
-  const QueryFilter({required this.field, required this.value});
+  const QueryFilter({
+    required this.field,
+    required this.value,
+    this.type = QueryFilterType.isEqualTo,
+  });
   final String field;
   final dynamic value;
+  final QueryFilterType type;
 }
 
 class FirestoreService {
@@ -30,7 +37,12 @@ class FirestoreService {
   }) async {
     Query<Map<String, dynamic>> q = _db.collection(path);
     for (final f in whereFilters ?? []) {
-      q = q.where(f.field, isEqualTo: f.value);
+      switch (f.type) {
+        case QueryFilterType.arrayContains:
+          q = q.where(f.field, arrayContains: f.value);
+        case QueryFilterType.isEqualTo:
+          q = q.where(f.field, isEqualTo: f.value);
+      }
     }
     if (orderBy != null) q = q.orderBy(orderBy, descending: descending);
     final snap = await q.get();
@@ -45,7 +57,12 @@ class FirestoreService {
   }) {
     Query<Map<String, dynamic>> q = _db.collection(path);
     for (final f in whereFilters ?? []) {
-      q = q.where(f.field, isEqualTo: f.value);
+      switch (f.type) {
+        case QueryFilterType.arrayContains:
+          q = q.where(f.field, arrayContains: f.value);
+        case QueryFilterType.isEqualTo:
+          q = q.where(f.field, isEqualTo: f.value);
+      }
     }
     if (orderBy != null) q = q.orderBy(orderBy, descending: descending);
     return q.snapshots().map((snap) =>

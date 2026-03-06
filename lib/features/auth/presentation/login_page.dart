@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/constants.dart';
+import '../../../core/logger.dart';
 import '../../../core/providers/app_providers.dart';
 import '../../../core/responsive/responsive.dart';
 import '../../../core/router/app_router.dart';
@@ -57,9 +58,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         _error = e.message ?? 'Giriş başarısız';
         _loading = false;
       });
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.error('Login failed', error: e, stackTrace: st, tag: 'Auth');
       setState(() {
-        _error = 'Giriş başarısız';
+        _error = 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.';
         _loading = false;
       });
     }

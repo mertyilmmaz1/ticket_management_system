@@ -282,7 +282,7 @@ class _CategoriesList extends ConsumerWidget {
             title: Text(c.name),
             trailing: IconButton(
               icon: const Icon(Icons.delete_outline),
-              onPressed: () => _deleteCategory(ref, tenantId, c.id, onRefresh),
+              onPressed: () => _deleteCategory(context, ref, tenantId, c.id, onRefresh),
             ),
           ),
         );
@@ -334,11 +334,44 @@ class _CategoriesList extends ConsumerWidget {
   }
 
   Future<void> _deleteCategory(
+    BuildContext context,
     WidgetRef ref,
     String tenantId,
     String categoryId,
     VoidCallback onRefresh,
   ) async {
+    // Kategoriye ait ürün var mı kontrol et
+    final products = await ref.read(productRepositoryProvider).getProducts(tenantId);
+    final linkedProducts = products.where((p) => p.categoryId == categoryId).toList();
+
+    if (linkedProducts.isNotEmpty && context.mounted) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Dikkat'),
+          content: Text(
+            'Bu kategoriye ait ${linkedProducts.length} ürün bulunuyor. '
+            'Kategoriyi silersenniz bu ürünler kategorisiz kalacak.\n\n'
+            'Devam etmek istiyor musunuz?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('İptal'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(ctx).colorScheme.error,
+              ),
+              child: const Text('Sil'),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+    }
+
     await ref
         .read(categoryRepositoryProvider)
         .deleteCategory(tenantId, categoryId);
@@ -477,18 +510,32 @@ class _ProductsList extends ConsumerWidget {
                 ),
           ),
     );
-    if (ok == true &&
-        nameController.text.trim().isNotEmpty &&
-        categoryId != null) {
-      final price =
-          double.tryParse(priceController.text.replaceAll(',', '.')) ?? 0;
+    if (ok == true && categoryId != null) {
+      final name = nameController.text.trim();
+      final price = double.tryParse(priceController.text.replaceAll(',', '.'));
+      if (name.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ürün adı boş olamaz')),
+          );
+        }
+        return;
+      }
+      if (price == null || price < 0) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Geçerli bir fiyat giriniz')),
+          );
+        }
+        return;
+      }
       await ref
           .read(productRepositoryProvider)
           .addProduct(
             tenantId,
             ProductModel(
               id: '',
-              name: nameController.text.trim(),
+              name: name,
               categoryId: categoryId!,
               price: price,
             ),
@@ -570,18 +617,32 @@ class _ProductsList extends ConsumerWidget {
                 ),
           ),
     );
-    if (ok == true &&
-        nameController.text.trim().isNotEmpty &&
-        categoryId != null) {
-      final price =
-          double.tryParse(priceController.text.replaceAll(',', '.')) ?? 0;
+    if (ok == true && categoryId != null) {
+      final name = nameController.text.trim();
+      final price = double.tryParse(priceController.text.replaceAll(',', '.'));
+      if (name.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Ürün adı boş olamaz')),
+          );
+        }
+        return;
+      }
+      if (price == null || price < 0) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Geçerli bir fiyat giriniz')),
+          );
+        }
+        return;
+      }
       await ref
           .read(productRepositoryProvider)
           .updateProduct(
             tenantId,
             ProductModel(
               id: p.id,
-              name: nameController.text.trim(),
+              name: name,
               categoryId: categoryId!,
               price: price,
             ),

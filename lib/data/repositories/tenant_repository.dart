@@ -1,3 +1,5 @@
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../firebase/firestore_paths.dart';
 import '../firebase/firestore_service.dart';
 import '../models/tenant.dart';
@@ -6,8 +8,21 @@ class TenantRepository {
   TenantRepository(this._firestore);
   final FirestoreService _firestore;
 
+  String? get _currentUid => FirebaseAuth.instance.currentUser?.uid;
+
   Future<List<Tenant>> getTenants() async {
-    final list = await _firestore.getCollection(FirestorePaths.tenants());
+    final uid = _currentUid;
+    if (uid == null) return [];
+    final list = await _firestore.getCollection(
+      FirestorePaths.tenants(),
+      whereFilters: [
+        QueryFilter(
+          field: 'memberUids',
+          value: uid,
+          type: QueryFilterType.arrayContains,
+        ),
+      ],
+    );
     return list.map((m) => Tenant.fromMap(m, m['id']?.toString())).toList();
   }
 
@@ -18,9 +33,17 @@ class TenantRepository {
   }
 
   Future<Tenant> addTenant(String name) async {
-    final id = await _firestore.addDocument(FirestorePaths.tenants(), {
-      'name': name,
-    });
-    return Tenant(id: id, name: name);
+    final uid = _currentUid ?? '';
+    final tenant = Tenant(
+      id: '',
+      name: name,
+      ownerUid: uid,
+      memberUids: [uid],
+    );
+    final id = await _firestore.addDocument(
+      FirestorePaths.tenants(),
+      tenant.toMap(),
+    );
+    return Tenant(id: id, name: name, ownerUid: uid, memberUids: [uid]);
   }
 }

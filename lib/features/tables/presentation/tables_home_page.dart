@@ -70,17 +70,9 @@ class _TablesHomePageState extends ConsumerState<TablesHomePage> {
 
   OrderModel? _openOrderForTable(String? tableId, {bool isPackage = false}) {
     if (isPackage) {
-      try {
-        return _openOrders.firstWhere((o) => o.isPackage);
-      } catch (_) {
-        return null;
-      }
+      return _openOrders.where((o) => o.isPackage).firstOrNull;
     }
-    try {
-      return _openOrders.firstWhere((o) => o.tableId == tableId);
-    } catch (_) {
-      return null;
-    }
+    return _openOrders.where((o) => o.tableId == tableId).firstOrNull;
   }
 
   void _openAdisyon({String? tableId, String? tableName, bool isPackage = false}) {
